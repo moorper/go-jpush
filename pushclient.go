@@ -1,58 +1,136 @@
-package jpushclient
+package jpush
 
 import (
-	"encoding/base64"
+	"bytes"
+	"encoding/json"
 	"errors"
-	"strings"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strconv"
 )
 
+/**
+ * HostPushSsl push url
+ * HostScheduleSsl schedule url
+ *
+ */
 const (
-	SUCCESS_FLAG  = "msg_id"
-	HOST_NAME_SSL = "https://api.jpush.cn/v3/push"
-	BASE64_TABLE  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	HostPushSsl     = "https://api.jpush.cn/v3/push"
+	HostScheduleSsl = "https://api.jpush.cn/v3/schedules"
+	CHARSET         = "UTF-8"
+	CONTENTTYPE     = "application/json"
 )
 
-var base64Coder = base64.NewEncoding(BASE64_TABLE)
-
-type PushClient struct {
-	MasterSecret string
+type Client struct {
 	AppKey       string
-	AuthCode     string
-	BaseUrl      string
+	MasterSecret string
+	url          *url.URL
+	method       string
+}
+type PushSendSuccessResponse struct {
+	Sendno string `json:"sendno"`
+	MsgID  string `json:"msg_id"`
+}
+type ScheduleSendSuccessResponse struct {
+	ScheduleId string `json:"schedule_id"`
+	Name       string `json:"name"`
+}
+type ScheduleListResponse struct {
+	TotalCount int        `json:"total_count"`
+	TotalPages int        `json:"total_pages"`
+	Page       int        `json:"page"`
+	Schedules  []Schedule `json:"schedules"`
 }
 
-func NewPushClient(secret, appKey string) *PushClient {
-	//base64
-	auth := "Basic " + base64Coder.EncodeToString([]byte(appKey+":"+secret))
-	pusher := &PushClient{secret, appKey, auth, HOST_NAME_SSL}
-	return pusher
-}
+func (this *Client) send(data []byte) ([]byte, error) {
 
-func (this *PushClient) Send(data []byte) (string, error) {
-	return this.SendPushBytes(data)
-}
-
-func (this *PushClient) SendPushString(content string) (string, error) {
-	ret, err := SendPostString(this.BaseUrl, content, this.AuthCode)
+	httpClient := &http.Client{}
+	httpRequest, err := http.NewRequest(this.method, this.url.String(), bytes.NewBuffer(data))
+	httpRequest.SetBasicAuth(this.AppKey, this.MasterSecret)
+	httpRequest.Header.Add("Charset", CHARSET)
+	httpRequest.Header.Add("Content-Type", CONTENTTYPE)
+	httpResponse, err := httpClient.Do(httpRequest)
 	if err != nil {
-		return ret, err
+		return nil, err
 	}
-	if strings.Contains(ret, "msg_id") {
-		return ret, nil
-	} else {
-		return "", errors.New(ret)
+	defer httpResponse.Body.Close()
+
+	httpResponseBody, err := ioutil.ReadAll(httpResponse.Body)
+	if err != nil {
+		return nil, err
 	}
+	if httpResponse.StatusCode != 200 {
+		return httpResponseBody, errors.New(string(httpResponseBody))
+
+	}
+	return httpResponseBody, nil
 }
 
-func (this *PushClient) SendPushBytes(content []byte) (string, error) {
-	//ret, err := SendPostBytes(this.BaseUrl, content, this.AuthCode)
-	ret, err := SendPostBytes2(this.BaseUrl, content, this.AuthCode)
+func (client *Client) PushSend(push PayLoad) (PushSendSuccessResponse, error) {
+	client.method = "POST"
+	client.url, _ = url.Parse(HostPushSsl)
+	bytes, _ := push.ToBytes()
+	result, err := client.send(bytes)
+	var pushSendSuccessResponse PushSendSuccessResponse
+	var errorResponse ErrorResponse
 	if err != nil {
-		return ret, err
+		json.Unmarshal(result, &errorResponse)
+		return pushSendSuccessResponse, errorResponse
 	}
-	if strings.Contains(ret, "msg_id") {
-		return ret, nil
-	} else {
-		return "", errors.New(ret)
+	json.Unmarshal(result, &pushSendSuccessResponse)
+	return pushSendSuccessResponse, nil
+}
+func (client *Client) ScheduleSend(schedule *Schedule) (ScheduleSendSuccessResponse, error) {
+	client.method = "POST"
+	client.url, _ = url.Parse(HostScheduleSsl)
+	bytes, _ := schedule.ToBytes()
+	result, err := client.send(bytes)
+	var scheduleSendSuccessResponse ScheduleSendSuccessResponse
+	var errorReponse ErrorResponse
+	if err != nil {
+		json.Unmarshal(result, &errorReponse)
+		return scheduleSendSuccessResponse, errorReponse
 	}
+	json.Unmarshal(result, &scheduleSendSuccessResponse)
+	return scheduleSendSuccessResponse, nil
+}
+func (client *Client) ScheduleList(page int) (ScheduleListResponse, error) {
+	client.method = "GET"
+	client.url, _ = url.Parse(HostScheduleSsl)
+	client.url.Query().Add("page", strconv.Itoa(page))
+	result, err := client.send(nil)
+	var scheduleListResponse ScheduleListResponse
+	var errorReponse ErrorResponse
+	if err != nil {
+		json.Unmarshal(result, &errorReponse)
+		return scheduleListResponse, errorReponse
+	}
+	json.Unmarshal(result, &scheduleListResponse)
+	return scheduleListResponse, nil
+}
+func (client *Client) ScheduleShow(id string) (Schedule, error) {
+	client.method = "GET"
+	client.url, _ = url.Parse(HostScheduleSsl + "/" + id)
+	result, err := client.send(nil)
+	var schedule Schedule
+	var errResponse ErrorResponse
+	if err != nil {
+		json.Unmarshal(result, &errResponse)
+		return schedule, errResponse
+	}
+	json.Unmarshal(result, &schedule)
+	return schedule, nil
+}
+func (client *Client) ScheduleDelete(id string) error {
+	client.method = "DELETE"
+	client.url, _ = url.Parse(HostScheduleSsl + "/" + id)
+	result, err := client.send(nil)
+
+	if err != nil {
+		var errorResult ErrorResponse
+		json.Unmarshal(result, &errorResult)
+		return errorResult
+	}
+	return nil
 }

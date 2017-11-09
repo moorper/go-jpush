@@ -1,4 +1,4 @@
-package jpushclient
+package jpush
 
 type Notice struct {
 	Alert    string          `json:"alert,omitempty"`

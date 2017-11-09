@@ -1,4 +1,4 @@
-package jpushclient
+package jpush
 
 type Option struct {
 	SendNo          int   `json:"sendno,omitempty"`

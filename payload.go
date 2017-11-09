@@ -1,4 +1,4 @@
-package jpushclient
+package jpush
 
 import (
 	"encoding/json"

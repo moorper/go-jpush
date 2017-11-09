@@ -1,4 +1,4 @@
-package jpushclient
+package jpush
 
 const (
 	TAG     = "tag"

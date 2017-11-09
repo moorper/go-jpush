@@ -1,4 +1,4 @@
-package jpushclient
+package jpush
 
 type Message struct {
 	Content     string                 `json:"msg_content"`
