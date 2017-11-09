@@ -28,7 +28,7 @@ type Periodical struct {
 }
 
 func NewSchedule(name string) *Schedule {
-	var schedule = new(Schedule)
+	schedule := &Schedule{}
 	schedule.Name = name
 	schedule.Enabled = true
 	return schedule

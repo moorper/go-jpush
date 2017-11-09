@@ -1,4 +1,4 @@
-jpush-api-go-client
+go-jpush
 ===================
 
 概述
@@ -9,7 +9,7 @@ jpush-api-go-client
 
 使用  
 ----------------------------------- 
-   go get github.com/ylywyn/jpush-api-go-client
+   go get github.com/moorper/go-jpush
    
    
 推送流程  
@@ -54,8 +54,10 @@ jpush-api-go-client
       
       
 ### 5.构建PushClient，发出推送
-	c := jpushclient.NewPushClient(secret, appKey)
-	r, err := c.Send(bytes)
+	var client jpushclient.Client
+	client.AppKey = appKey
+	client.MasterSecret = secret
+	r, err := client.PushSend(*payload)
 	if err != nil {
 		fmt.Printf("err:%s", err.Error())
 	} else {

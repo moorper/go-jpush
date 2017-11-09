@@ -67,7 +67,7 @@ func (this *Client) send(data []byte) ([]byte, error) {
 	return httpResponseBody, nil
 }
 
-func (client *Client) PushSend(push PayLoad) (PushSendSuccessResponse, error) {
+func (client *Client) PushSend(push *PayLoad) (PushSendSuccessResponse, error) {
 	client.method = "POST"
 	client.url, _ = url.Parse(HostPushSsl)
 	bytes, _ := push.ToBytes()

@@ -13,11 +13,11 @@ type PayLoad struct {
 }
 
 func NewPushPayLoad() *PayLoad {
-	pl := &PayLoad{}
-	o := &Option{}
-	o.ApnsProduction = false
-	pl.Options = o
-	return pl
+	var payload = &PayLoad{}
+	var option = &Option{}
+	option.ApnsProduction = false
+	payload.Options = option
+	return payload
 }
 
 func (this *PayLoad) SetPlatform(pf *Platform) {
