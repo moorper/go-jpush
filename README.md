@@ -7,13 +7,13 @@ go-jpush
    REST API 文档：http://docs.jpush.cn/display/dev/Push-API-v3
   
 
-使用  
------------------------------------ 
-   go get github.com/moorper/go-jpush
+安装
+---
+   `go get -u github.com/moorper/go-jpush`
    
    
-推送流程  
------------------------------------ 
+## Push API
+
 ### 1.构建要推送的平台： jpushclient.Platform
 	//Platform
 	var pf jpushclient.Platform
@@ -125,3 +125,30 @@ go-jpush
 		}
 	}
 
+## Device API
+
+### 1. 设置 key 和 secret
+`deviceClient := device.Client{AppKey: "", MasterSecret:""}`
+### 2. 正常请求
+
+```golang
+registrationID := "aaaaaaaaaaaaa"
+alias := "abc"
+
+// 获取设备信息
+deviceClient.GetDevicesInfo(registrationID)
+
+// 为当前设备绑定信息
+var tags = make(map[string][]string)
+tags["add"] = []string{"a"}
+deviceClient.UpdateDevicesInfo(registrationID, "", alias, "")
+
+// 获取绑定了指定 alias 的设备，可指定 platform
+deviceClient.FetchDevicesByAlias(alias, []string{})
+
+// 删除指定 alias 的绑定，可指定 platform
+deviceClient.AliasDelete(alias, []string{})
+
+// 当前账号下所有的 tags
+deviceClient.FetchTags()
+```
